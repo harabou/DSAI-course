@@ -1,0 +1,267 @@
+﻿New Window( "独立二標本平均の検出力エクスプローラ",
+	V List Box(
+		V List Box(
+			Outline Box( "独立二標本平均の検出力エクスプローラ",
+				V List Box(
+					Outline Box( "エクスプローラの設定",
+						H List Box(
+							Panel Box( "検定の種類" ),
+							Panel Box( "設定",
+								V List Box(
+									Lineup Box( N Col( 2 ),
+										Text Box( "アルファ" ),
+										Spacer Box()
+									),
+									Lineup Box( N Col( 2 ),
+										Text Box( "母標準偏差は既知か?" ),
+										Spacer Box()
+									)
+								)
+							)
+						)
+					),
+					Outline Box( "プロファイル",
+						V List Box(
+							Lineup Box( N Col( 3 ),
+								Text Box( " 全体の標本サイズ" ),
+								Spacer Box(),
+								Spacer Box()
+							),
+							Lineup Box( N Col( 2 ),
+								Text Box( "解を求めたい対象:" ),
+								Spacer Box()
+							),
+							H List Box(
+								H List Box(
+									V List Box(
+										Lineup Box( N Col( 1 ),
+											Text Box( "検出力", <<Set Wrap( 200 ) ),
+											Spacer Box(),
+											<<Spacing( 5 )
+										)
+									),
+									V List Box(
+										V List Box(
+											Text Box(
+												"群1の標本サイズ",
+												<<Set Wrap( 200 )
+											),
+											H Center Box()
+										)
+									)
+								),
+								H List Box(
+									V List Box(
+										V List Box(
+											Text Box(
+												"群2の標本サイズ",
+												<<Set Wrap( 200 )
+											),
+											H Center Box()
+										)
+									)
+								),
+								H List Box(
+									V List Box(
+										V List Box(
+											Text Box( "検出したい差", <<Set Wrap( 200 ) ),
+											H Center Box()
+										)
+									)
+								),
+								H List Box(
+									V List Box(
+										V List Box(
+											Text Box(
+												"群1の標準偏差（σ₁）",
+												<<Set Wrap( 200 )
+											),
+											H Center Box()
+										)
+									)
+								),
+								H List Box(
+									V List Box(
+										V List Box(
+											Text Box(
+												"群2の標準偏差（σ₂）",
+												<<Set Wrap( 200 )
+											),
+											H Center Box()
+										)
+									)
+								)
+							),
+							H List Box()
+						)
+					),
+					Outline Box( "設定の保存",
+						V List Box( V List Box() ),
+						<<Close( 0 ),
+						<<Set Menu Script(
+							{Locale:get( "S_Clear_Selected_Row_xxx" ), tmpsel =
+							Num( rbx << Get Selected ) ;
+							Remove From( rbxlist, tmpsel ) ;
+							If( tmpsel == 1,
+								rbx << Set( 2, run script( 1 ) ),
+								rbx << Set( tmpsel - 1, run script( 1 ) )
+							) ; Eval(
+								Substitute(
+										Expr(
+											httwomeanssavtab << delete row( _row )
+										),
+									Expr( _row ), tmpsel
+								)
+							) ; If( N Rows( httwomeanssavtab << get as matrix ) == 0,
+								httwomeanssavtab << close,
+								For( i = tmpsel, i <= N Items( rbxlist ), i++,
+									rbxlist[i] = Char( Num( rbxlist[i] ) - 1 )
+								);
+								Eval(
+									Substitute(
+											Expr(
+												rbx << Set Items( _rlist )
+											),
+										Expr( _rlist ), rbxlist
+									)
+								);
+								If( tmpsel > 1,
+									rbx << Set( tmpsel - 1 )
+								);
+							), Locale:get( "S_Clear_All_xxx" ), tmpnrows =
+							N Rows( httwomeanssavtab << get as matrix ) ;
+							For( i = tmpnrows, i > 0, i--,
+								Eval(
+									Substitute(
+											Expr(
+												httwomeanssavtab <<
+												delete row( _row )
+											),
+										Expr( _row ), i
+									)
+								)
+							) ; httwomeanssavtab[1] << Set items( {} ) ; rbxlist =
+							{} ; htmeanssavtabob << close, Locale
+							:get( "S_Make_Table_xxx" ), dt = httwomeanssavtab <<
+							make into data table ; dt <<
+							delete scripts( "Make Into Data Table" )}
+						)
+					)
+				),
+				<<Set Menu Script(
+					{Locale:get( "S_Simulate_Data_xxx" ), groupCounts = htmeanssg1
+					 || htmeanssg2 ; groupIDs = [] ;
+					For( i = 1, i <= 2, i++,
+						groupIDs |/= Repeat( i, groupCounts[i] )
+					) ; newtabsim = New Table( Locale:get( "S_Simulated_Data_Fil" ),
+						Add Rows( Sum( groupCounts ) ),
+						New Column( Locale:get( "S_Group_Col" ),
+							Numeric,
+							"Nominal",
+							Format( "Best", 12 ),
+							Set Values( groupIDs )
+						),
+						New Column( Locale:get( "S_Response_Col" ),
+							Numeric,
+							"Continuous",
+							Format( "Best", 12 )
+						),
+						New Column( Locale:get( "S_Simulated_Response_Col" ),
+							Numeric,
+							"Continuous",
+							Format( "Best", 12 )
+						)
+					) ; newtabsim << Set Table Variable( "mu1", 0 ) ; newtabsim <<
+					Set Table Variable( "delta", htdeltavalue ) ; newtabsim <<
+					Set Table Variable( "sigma1", htsigma1value ) ; newtabsim <<
+					Set Table Variable( "sigma2", htsigma2value ) ;
+					Eval(
+						Substitute(
+								Expr(
+									Column(
+										newtabsim,
+										Locale:get( "S_Simulated_Response_Col" )
+									) << Set Formula(
+										If( _grp == 1,
+											Random Normal( :mu1, :sigma1 ),
+											Random Normal( :mu1 + :delta, :sigma2 )
+										)
+									)
+								),
+							Expr( _grp ),
+								Parse( ":" || Locale:get( "S_Group_Col" ) )
+						)
+					) ; Column( newtabsim, Locale:get( "S_Response_Col" ) ) <<
+					Set Values(
+						Column(
+							newtabsim,
+							Locale:get( "S_Simulated_Response_Col" )
+						) << Get Values
+					) ; Eval(
+						Substitute(
+								Expr(
+									newtabsim <<
+									New Script(
+										Locale:get( "S_Oneway_Analysis_2_xxx" ),
+										Oneway(
+											Y( _resp ),
+											X( _grp ),
+											t Test( 1 ),
+											Set α Level( _alpha )
+										)
+									)
+								),
+							Expr( _resp ),
+								Parse( ":" || Locale:get( "S_Response_Col" ) ),
+							Expr( _grp ),
+								Parse( ":" || Locale:get( "S_Group_Col" ) ),
+							Expr( _alpha ), htmeansalphavalue
+						)
+					), Locale:get( "S_Make_Data_Collection_Table_xxx" ), groupCounts
+					 = htmeanssg1 || htmeanssg2 ; groupIDs = [] ;
+					For( i = 1, i <= 2, i++,
+						groupIDs |/= Repeat( i, groupCounts[i] )
+					) ; newtabmeans = New Table(
+						Locale:get( "S_Data_Collection_Fil" ),
+						Add Rows( Sum( groupCounts ) ),
+						New Column( Locale:get( "S_Group_Col" ),
+							Numeric,
+							"Nominal",
+							Format( "Best", 12 ),
+							Set Values( groupIDs )
+						),
+						New Column( Locale:get( "S_Response_Col" ),
+							Numeric,
+							"Continuous",
+							Format( "Best", 12 )
+						)
+					) ; Eval(
+						Substitute(
+								Expr(
+									newtabmeans <<
+									New Script(
+										Locale:get( "S_Oneway_Analysis_xxx" ),
+										Oneway(
+											Y( _resp ),
+											X( _grp ),
+											t Test( 1 ),
+											Set α Level( _alpha )
+										)
+									)
+								),
+							Expr( _resp ),
+								Parse( ":" || Locale:get( "S_Response_Col" ) ),
+							Expr( _grp ),
+								Parse( ":" || Locale:get( "S_Group_Col" ) ),
+							Expr( _alpha ), htmeansalphavalue
+						)
+					)}
+				)
+			)
+		),
+		Text Box(
+			"注: 母標準偏差を未知とした場合、母標準偏差が等しくないと仮定した時にはSatterthwaite近似の自由度を用いて、一方、母標準偏差が等しいと仮定した時には正確な自由度を用いて、検出力が計算されます。このような違いがあるため、母標準偏差が等しい点において曲線が急激に変化する場合があります。",
+			<<Set Wrap( 800 )
+		)
+	)
+)
